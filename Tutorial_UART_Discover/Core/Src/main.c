@@ -19,8 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
-#include "string.h"
-
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -162,7 +160,16 @@ int main(void)
 	}
    /* USER CODE END 3 */
   }
-  /* USER CODE END WHILE */
+    /* USER CODE END WHILE */
+    MX_USB_HOST_Process();
+
+    /* USER CODE BEGIN 3 */
+
+    init_transmit_DMA();
+    if (buttonPressed) {
+		buttonPressed = 0;
+	}
+  /* USER CODE END 3 */
 }
 
 /**
