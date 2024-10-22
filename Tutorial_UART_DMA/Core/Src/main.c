@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "string.h"
-
+#include "stdio.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -193,18 +193,6 @@ int main(void)
    /* USER CODE END 3 */
   }
     /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-	HAL_UART_Receive_IT(&huart2, &counter, sizeof(counter));
-
-	if (ledCount > 0) {
-	   isSending = 1;
-	   init_receive_DMA();
-	   piscaLED(ledCount);
-	   enviarParaPC(ledCount);
-	   ledCount = 0;
-   }
-  /* USER CODE END 3 */
 }
 
 /**
