@@ -73,17 +73,40 @@ void MX_USB_HOST_Process(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void init_transmit_DMA(void);
-void restart_uart(UART_HandleTypeDef *huart);
-
 uint8_t rxData;
 uint8_t counter = 0;
-uint8_t readyToReceive;
-uint8_t completedRequest;
+uint8_t readyToReceive = 0;
 volatile uint8_t rx_complete = 0;
 volatile uint8_t tx_complete = 0;
 volatile uint8_t buttonPressed = 0;
 char tabelaEquipe[3][100] = {"\nMaria Luiza, Matricula", "\nEduardo, Matricula1", "\nMarcos, Matricula2"};
+
+void restart_uart(UART_HandleTypeDef *huart) {
+	__HAL_UART_DISABLE(huart);
+
+	HAL_UART_DeInit(huart);
+	HAL_UART_Init(huart);
+
+	__HAL_UART_ENABLE(huart);
+}
+
+void init_transmit_DMA(void) {
+        if (rx_complete) {
+            HAL_UART_Receive_IT(&huart2, &readyToReceive, sizeof(readyToReceive));
+            if (readyToReceive == 0x5A){
+            	HAL_UART_Transmit_DMA(&huart2, (uint8_t *)tabelaEquipe, sizeof(tabelaEquipe));
+            	HAL_Delay(1000);
+
+            	rx_complete = 0;
+            	readyToReceive = 0;
+            	rxData = 0;
+            	counter = 0;
+
+            	restart_uart(&huart2);
+                HAL_UART_Receive_IT(&huart2, &rxData, sizeof(rxData));
+            }
+        }
+}
 
 /* USER CODE END 0 */
 
@@ -130,17 +153,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
     MX_USB_HOST_Process();
+    /* USER CODE BEGIN 3 */
 
     init_transmit_DMA();
-    /* USER CODE BEGIN 3 */
     if (buttonPressed) {
-		// Incrementa o contador ao pressionar o botão
 		buttonPressed = 0;
 	}
+   /* USER CODE END 3 */
   }
-  /* USER CODE END 3 */
+  /* USER CODE END WHILE */
 }
 
 /**
@@ -465,41 +487,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     	}
     }
 }
-
-void init_transmit_DMA(void) {
-        if (rx_complete) {
-            HAL_UART_Receive_IT(&huart2, &readyToReceive, sizeof(readyToReceive));
-            if (readyToReceive == 0x5A){
-            	HAL_UART_Transmit_DMA(&huart2, (uint8_t *)tabelaEquipe, sizeof(tabelaEquipe));
-            	HAL_Delay(1000);
-
-            	rx_complete = 0;
-            	readyToReceive = 0;
-            	completedRequest = 1;
-            	rxData = 0;
-            	counter = 0;
-
-            	restart_uart(&huart2);
-                HAL_UART_Receive_IT(&huart2, &rxData, sizeof(rxData));
-            }
-        } else{
-        	if(completedRequest){
-            	completedRequest = 0;
-        		HAL_UART_Receive_IT(&huart2, &rxData, sizeof(rxData));
-        	}
-        }
-}
-
-void restart_uart(UART_HandleTypeDef *huart) {
-	__HAL_UART_DISABLE(huart);
-
-	HAL_UART_DeInit(huart);
-	HAL_UART_Init(huart);
-
-	__HAL_UART_ENABLE(huart);
-}
-
-
 /* USER CODE END 4 */
 
 /**

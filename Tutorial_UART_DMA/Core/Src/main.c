@@ -19,7 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "string.h"
-
+#include "stdio.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -89,10 +89,7 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void init_receive_DMA();
-void restart_uart(UART_HandleTypeDef *huart);
-
-uint8_t txData = 0x5A;  // Comando a ser enviado
+uint8_t txData = 0x5A;
 uint8_t counter = 0;
 char tabelaEquipe[3][100] = {};
 int ledCount = 0;
@@ -102,11 +99,14 @@ volatile uint8_t tabela_received = 0;
 
 void piscaLED(int count) {
     for (int i = 0; i < count; i++) {
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);  // Liga/Desliga LED
-        HAL_Delay(500);  // 1 Hz
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);  // Desliga
+        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
+        HAL_Delay(500);
+        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_0);
         HAL_Delay(500);
     }
+}
+
+void enviarParaPC(int count) {
     char msg[30];
     sprintf(msg, "\nNumero de eventos = %d", count);
     HAL_UART_Transmit_IT(&huart3, (uint8_t *)msg, strlen(msg));
@@ -115,6 +115,26 @@ void piscaLED(int count) {
     HAL_Delay(1000);
     isSending = 0;
 }
+
+void restart_uart(UART_HandleTypeDef *huart) {
+                __HAL_UART_DISABLE(huart);
+
+                HAL_UART_DeInit(huart);
+                HAL_UART_Init(huart);
+
+                __HAL_UART_ENABLE(huart);
+}
+
+void init_receive_DMA(void) {
+	if (counter_received) {
+		restart_uart(&huart2);
+		HAL_UART_Receive_DMA(&huart2, (uint8_t *)tabelaEquipe, sizeof(tabelaEquipe));
+		uint8_t readyToReceive = 0x5A;
+		HAL_UART_Transmit_IT(&huart2, &readyToReceive, sizeof(readyToReceive));
+	}
+}
+
+
 /* USER CODE END 0 */
 
 /**
@@ -153,14 +173,12 @@ int main(void)
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, &counter, sizeof(counter));
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
 	HAL_UART_Receive_IT(&huart2, &counter, sizeof(counter));
@@ -169,10 +187,12 @@ int main(void)
 	   isSending = 1;
 	   init_receive_DMA();
 	   piscaLED(ledCount);
+	   enviarParaPC(ledCount);
 	   ledCount = 0;
    }
+   /* USER CODE END 3 */
   }
-  /* USER CODE END 3 */
+    /* USER CODE END WHILE */
 }
 
 /**
@@ -542,26 +562,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     }
 }
 
-
-void init_receive_DMA(void) {
-	if (counter_received) {
-	restart_uart(&huart2);
-	HAL_UART_Receive_DMA(&huart2, (uint8_t *)tabelaEquipe, sizeof(tabelaEquipe));
-	uint8_t readyToReceive = 0x5A;
-	HAL_UART_Transmit_IT(&huart2, &readyToReceive, sizeof(readyToReceive));
-
-	}
-}
-
-
-void restart_uart(UART_HandleTypeDef *huart) {
-                __HAL_UART_DISABLE(huart);
-
-                HAL_UART_DeInit(huart);
-                HAL_UART_Init(huart);
-
-                __HAL_UART_ENABLE(huart);
-}
 /* USER CODE END 4 */
 
 /**
