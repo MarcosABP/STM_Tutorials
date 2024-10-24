@@ -19,8 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "usb_host.h"
-#include "string.h"
-
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -79,6 +77,7 @@ uint8_t readyToReceive = 0;
 volatile uint8_t rx_complete = 0;
 volatile uint8_t tx_complete = 0;
 volatile uint8_t buttonPressed = 0;
+uint32_t last_interrupt_time = 0;
 char tabelaEquipe[3][100] = {"\nMaria Luiza, Matricula", "\nEduardo, Matricula1", "\nMarcos, Matricula2"};
 
 void restart_uart(UART_HandleTypeDef *huart) {
@@ -157,12 +156,9 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     init_transmit_DMA();
-    if (buttonPressed) {
-		buttonPressed = 0;
-	}
    /* USER CODE END 3 */
   }
-  /* USER CODE END WHILE */
+    /* USER CODE END WHILE */
 }
 
 /**
@@ -470,9 +466,14 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    uint32_t current_time = HAL_GetTick(); // Obtém o tempo atual em milissegundos
+    if ((current_time - last_interrupt_time) < 200) // 200ms de "debounce"
+    {
+        return;
+    }
+    last_interrupt_time = current_time;
     if (GPIO_Pin == GPIO_PIN_0) {
         counter++;
-        buttonPressed = 1;
     }
 }
 
