@@ -60,8 +60,8 @@ all: main-build
 main-build: Tutorial_UART_DMA.elf secondary-outputs
 
 # Tool invocations
-Tutorial_UART_DMA.elf Tutorial_UART_DMA.map: $(OBJS) $(USER_OBJS) C:\Users\malub\Downloads\Tutorial_UART_Nucleo\Tutorial_UART_DMA\STM32H753ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Tutorial_UART_DMA.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\malub\Downloads\Tutorial_UART_Nucleo\Tutorial_UART_DMA\STM32H753ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Tutorial_UART_DMA.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Tutorial_UART_DMA.elf Tutorial_UART_DMA.map: $(OBJS) $(USER_OBJS) C:\Users\prude\Downloads\Tutorial_UART_DMA\Tutorial_UART_DMA\STM32H753ZITX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Tutorial_UART_DMA.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m7 -T"C:\Users\prude\Downloads\Tutorial_UART_DMA\Tutorial_UART_DMA\STM32H753ZITX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Tutorial_UART_DMA.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv5-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
