@@ -34,21 +34,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define PCF8591_ADDRESS 0x48 << 1
-#define MAX7219_REG_NOOP 0x00
-#define MAX7219_REG_DIGIT0 0x01
-#define MAX7219_REG_DIGIT1 0x02
-#define MAX7219_REG_DIGIT2 0x03
-#define MAX7219_REG_DIGIT3 0x04
-#define MAX7219_REG_DIGIT4 0x05
-#define MAX7219_REG_DIGIT5 0x06
-#define MAX7219_REG_DIGIT6 0x07
-#define MAX7219_REG_DIGIT7 0x08
-#define MAX7219_REG_DECODEMODE 0x09
-#define MAX7219_REG_INTENSITY 0x0A
-#define MAX7219_REG_SCANLIMIT 0x0B
-#define MAX7219_REG_SHUTDOWN 0x0C
-#define MAX7219_REG_DISPLAYTEST 0x0F
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -89,19 +74,8 @@ const uint8_t char_T[8] = {0xFF, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18};
 const uint8_t char_V[8] = {0x81, 0x81, 0x42, 0x42, 0x24, 0x24, 0x18, 0x18};
 const uint8_t char_L[8] = {0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0xFF};
 
-const uint8_t numbers[10][8] = {
-    {0x3C, 0x42, 0x46, 0x4A, 0x52, 0x62, 0x42, 0x3C}, /* 0 */
-    {0x18, 0x38, 0x18, 0x18, 0x18, 0x18, 0x18, 0x7E}, /* 1 */
-    {0x3C, 0x42, 0x02, 0x04, 0x08, 0x10, 0x20, 0x7E}, /* 2 */
-    {0x3C, 0x42, 0x02, 0x1C, 0x02, 0x02, 0x42, 0x3C}, /* 3 */
-    {0x04, 0x0C, 0x14, 0x24, 0x44, 0x7E, 0x04, 0x04}, /* 4 */
-    {0x7E, 0x40, 0x7C, 0x02, 0x02, 0x02, 0x42, 0x3C}, /* 5 */
-    {0x1C, 0x20, 0x40, 0x7C, 0x42, 0x42, 0x42, 0x3C}, /* 6 */
-    {0x7E, 0x02, 0x02, 0x04, 0x08, 0x10, 0x20, 0x20}, /* 7 */
-    {0x3C, 0x42, 0x42, 0x3C, 0x42, 0x42, 0x42, 0x3C}, /* 8 */
-    {0x3C, 0x42, 0x42, 0x42, 0x3E, 0x02, 0x04, 0x38}  /* 9 */
-};
-
+const uint8_t char_plus[8] = {0x00, 0x18, 0x18, 0x7E, 0x18, 0x18, 0x00, 0x00};
+const uint8_t char_minus[8] = {0x00, 0x00, 0x00, 0x7E, 0x00, 0x00, 0x00, 0x00};
 
 void MAX7219_SendData(uint8_t reg, uint8_t data) {
 	uint8_t txData[2] = {reg, data};
@@ -129,28 +103,18 @@ void Display_Char(const uint8_t *char_pattern) {
     }
 }
 
-void Display_Number(uint8_t number) {
-	MAX7219_init();
-	 uint8_t digits[5];
-	 uint8_t count = 0;
-
-	do {
-		digits[count++] = number % 10;
-		number /= 10;
-	} while (number > 0);
-
-
-	for (int i = count - 1; i >= 0; i--) {
-		for (int row = 0; row < 8; row++) {
-			MAX7219_SendData(row + 1, numbers[digits[i]][row]);
-		}
-		HAL_Delay(500);
+void Display_Alternating(const uint8_t *char_pattern, const uint8_t *sign_pattern, uint16_t delay_ms) {
+	for(int i = 0; i < 10; i++){
+		Display_Char(char_pattern);
+		HAL_Delay(delay_ms);
+		Display_Char(sign_pattern);
+		HAL_Delay(delay_ms);
 	}
-
 	for (int i = 1; i <= 8; i++) {
 		MAX7219_SendData(i, 0x00);
 	}
 }
+
 
 char * clean_command_buffer(char *command) {
     while (*command == '\r' || *command == '\n') {
@@ -186,26 +150,38 @@ void process_command(char *command) {
     command = clean_command_buffer(command);
 
     if (strcmp(command, "Temp") == 0) {
+
         uint8_t temp = Read_PCF8591(0);
-        Display_Char(char_T);
-        HAL_Delay(500);
-        Display_Number(temp);
         sprintf(msg, "Temperature: %d\n", temp);
         HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+
+        if (temp < 128) {
+			Display_Alternating(char_T, char_minus, 500);
+		} else {
+			Display_Alternating(char_T, char_plus, 500);
+		}
     } else if (strcmp(command, "Volt") == 0) {
+
         uint8_t volt = Read_PCF8591(1);
-        Display_Char(char_V);
-        HAL_Delay(500);
-        Display_Number(volt);
         sprintf(msg, "Voltage: %d\n", volt);
         HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+
+        if (volt < 128) {
+			Display_Alternating(char_V, char_minus, 500);
+		} else {
+			Display_Alternating(char_V, char_plus, 500);
+		}
     } else if (strcmp(command, "LDR") == 0) {
+
         uint8_t ldr = Read_PCF8591(3);
-        Display_Char(char_L);
-        HAL_Delay(500);
-        Display_Number(ldr);
         sprintf(msg, "Luminosity: %d\n", ldr);
         HAL_UART_Transmit(&huart3, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
+
+        if (ldr < 128) {
+			Display_Alternating(char_L, char_minus, 500);
+		} else {
+			Display_Alternating(char_L, char_plus, 500);
+		}
     }
 }
 
@@ -255,6 +231,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+      HAL_UART_Receive_IT(&huart3, (uint8_t*)command_buffer, sizeof(command_buffer) - 1);
 
     /* USER CODE BEGIN 3 */
   }
